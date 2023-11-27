@@ -31,13 +31,13 @@ public class AMain extends Agent {
             e.printStackTrace();
         }
 
-//        for (int i = 2; i < 4; i++) {
-//            AID agentID = agents[i].getName();
-//            ACLMessage msg = new ACLMessage(ACLMessage.INFORM);
-//            msg.addReceiver(agentID); // id агента, которому отправляем сообщение
-//            msg.setLanguage("English"); //Язык
-//            msg.setContent("Ping"); //Содержимое сообщения
-//            send(msg); //отправляем сообщение
-//        }
+        for (int i = 2; i < 4; i++) {
+            AID agentID = agents[i].getName();
+            ACLMessage msg = new ACLMessage(ACLMessage.INFORM);
+            msg.addReceiver(agentID); // id агента, которому отправляем сообщение
+            msg.setLanguage("English"); //Язык
+            msg.setContent("Ping"); //Содержимое сообщения
+            send(msg); //отправляем сообщение
+        }
     }
 }
