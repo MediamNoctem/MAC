@@ -1,5 +1,4 @@
 package travelAgency;
-import bookTrading.BookBuyerAgent;
 import jade.core.Agent;
 import jade.core.AID;
 import jade.core.behaviours.*;

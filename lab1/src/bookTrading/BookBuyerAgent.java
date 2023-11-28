@@ -29,7 +29,7 @@ public class BookBuyerAgent extends Agent {
             System.out.println("Target book is "+targetBookTitle);
 
             // Add a TickerBehaviour that schedules a request for seller agents every minute
-            addBehaviour(new TickerBehaviour(this, 10000) {
+            addBehaviour(new TickerBehaviour(this, 30000) {
                 private static final long serialVersionUID = 1L;
 
                 protected void onTick() {
