@@ -24,7 +24,7 @@ public class ClientAgent extends Agent {
                     Integer.parseInt((String) args[3]));
             System.out.println("Клиентские требования:\n" + customerRequests.String());
 
-            addBehaviour(new TickerBehaviour(this, 1000) {
+            addBehaviour(new TickerBehaviour(this, 30000) {
                 private static final long serialVersionUID = 1L;
 
                 protected void onTick() {

@@ -1,1 +1,1 @@
-http://212.192.146.208:7778/acc
+http://ssl.bandisoft.com:7778/acc
