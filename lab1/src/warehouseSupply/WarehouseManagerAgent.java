@@ -1,5 +1,6 @@
 package warehouseSupply;
 
+import com.sun.jdi.Value;
 import jade.core.AID;
 import jade.core.Agent;
 import jade.core.behaviours.Behaviour;
@@ -12,11 +13,13 @@ import jade.lang.acl.ACLMessage;
 import jade.lang.acl.MessageTemplate;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.Random;
 
 // Агент-менеджер склада
 public class WarehouseManagerAgent extends Agent {
-    public String[] category = { "Хлебобулочные изделия", "Бакалея", "Крупы", "Мясо", "Молочные изделия" };
+    public String[] category;
+    // {"Хлебобулочные изделия", "Бакалея", "Крупы", "Мясо", "Молочные изделия"};
     public ArrayList<Record> productDatabase;
     ArrayList<String> listOfNecessaryProducts;
     private AID[] supplyAgents;
@@ -25,17 +28,21 @@ public class WarehouseManagerAgent extends Agent {
         System.out.println("Агент-менеджер склада " + getAID().getName() + " готов.\n");
 
         Record record;
+        HashSet<String> categoryHashSet = new HashSet<>();
         Object[] args = getArguments();
 
         if (args != null && args.length > 0) {
-            System.out.println("-----------------База товаров-----------------");
+            System.out.println("-----------------База товаров менеджера------------------");
             for (int i = 0; i < args.length / 3; i++) {
                 record = new Record((String) args[3 * i], (String) args[3 * i + 1],
                         Integer.parseInt((String) args[3 * i + 2]));
                 productDatabase.add(record);
+                categoryHashSet.add((String) args[3 * i + 1]);
                 System.out.println("Запись " + i + ":\n" + record.String());
             }
-            System.out.println("----------------------------------------------\n");
+            System.out.println("---------------------------------------------------------\n");
+
+            category = categoryHashSet.toArray(new String[0]);
 
             addBehaviour(new TickerBehaviour(this, 20000) {
                 @Override
@@ -69,6 +76,8 @@ public class WarehouseManagerAgent extends Agent {
                         } catch (FIPAException fe) {
                             fe.printStackTrace();
                         }
+
+                        myAgent.addBehaviour(new RequestPerformer());
                     } else {
                         System.out.println("На данный момент товарные позиции пополнить не нужно.");
                     }
@@ -219,13 +228,12 @@ public class WarehouseManagerAgent extends Agent {
                     reply = myAgent.receive(mt);
                     if (reply != null) {
                         if (reply.getPerformative() == ACLMessage.INFORM) {
-                            System.out.println("Товары успешно приобретены у агента " + reply.getSender().getName());
+                            System.out.println("Товары успешно приобретены через агента снабжения " + reply.getSender().getName());
                             myAgent.doDelete();
                         }
                         else {
                             System.out.println("Попытка не удалась: запрошенных товаров нет.");
                         }
-
                         step = 4;
                     }
                     else {

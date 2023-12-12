@@ -1,6 +1,7 @@
 package test;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 
 public class Main {
     public static void main(String[] args) {
@@ -17,12 +18,15 @@ public class Main {
 //            r = catalogue.get(i);
 //
 //        }
-        ArrayList<String> str = new ArrayList<>();
-        str.add("A");
-        str.add("B");
-        str.add("C");
-        str.add("L");
-
-        System.out.println(str.get(3).compareTo(str.get(0)));
+        HashSet<String> hs = new HashSet<>();
+        hs.add("aaa");
+        hs.add("bbb");
+        hs.add("ccc");
+        hs.add("aaa");
+        hs.add("bbbb");
+        String[] hss = hs.toArray(new String[0]);
+        for (int i = 0; i < hss.length; i++) {
+            System.out.println(hss[i]);
+        }
     }
 }
