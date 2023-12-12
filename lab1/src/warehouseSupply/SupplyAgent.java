@@ -76,82 +76,80 @@ public class SupplyAgent extends Agent {
         private int step = 0;
 
         public void action() {
-            switch (step) {
-                case 0:
-                    DFAgentDescription template = new DFAgentDescription();
-                    ServiceDescription sdt = new ServiceDescription();
-                    sdt.setType("supply-" + clientRequests[1] + "-" + clientRequests[0]);
-                    template.addServices(sdt);
-                    try {
-                        DFAgentDescription[] result = DFService.search(myAgent, template);
-                        System.out.println("Найдены следующие агенты-поставщики:");
-                        supplierAgents = new AID[result.length];
-                        for (int i = 0; i < result.length; ++i) {
-                            supplierAgents[i] = result[i].getName();
-                            System.out.println("    * " + supplierAgents[i].getName());
+            for (int i = 0; i < clientRequests.length / 2; i++) {
+                switch (step) {
+                    case 0:
+                        DFAgentDescription template = new DFAgentDescription();
+                        ServiceDescription sdt = new ServiceDescription();
+                        sdt.setType("supply-" + clientRequests[2 * i + 1] + "-" + clientRequests[2 * i]);
+                        template.addServices(sdt);
+                        try {
+                            DFAgentDescription[] result = DFService.search(myAgent, template);
+                            System.out.println("Найдены следующие агенты-поставщики:");
+                            supplierAgents = new AID[result.length];
+                            for (int j = 0; j < result.length; ++j) {
+                                supplierAgents[j] = result[j].getName();
+                                System.out.println("    * " + supplierAgents[j].getName());
+                            }
+                        } catch (FIPAException fe) {
+                            fe.printStackTrace();
                         }
-                    }
-                    catch (FIPAException fe) {
-                        fe.printStackTrace();
-                    }
-                    step = 1;
-                    break;
-                case 1:
-                    ACLMessage cfp = new ACLMessage(ACLMessage.CFP);
-                    for (int i = 0; i < supplierAgents.length; ++i) {
-                        cfp.addReceiver(supplierAgents[i]);
-                    }
-                    cfp.setContent("");
-                    cfp.setConversationId("supply-of-products");
-                    cfp.setReplyWith("cfp" + System.currentTimeMillis());
+                        step = 1;
+                        break;
+                    case 1:
+                        ACLMessage cfp = new ACLMessage(ACLMessage.CFP);
+                        for (int j = 0; j < supplierAgents.length; ++j) {
+                            cfp.addReceiver(supplierAgents[j]);
+                        }
+                        cfp.setContent("");
+                        cfp.setConversationId("supply-of-products");
+                        cfp.setReplyWith("cfp" + System.currentTimeMillis());
 
-                    myAgent.send(cfp);
-                    mt = MessageTemplate.and(MessageTemplate.MatchConversationId("supply-of-products"),
-                            MessageTemplate.MatchInReplyTo(cfp.getReplyWith()));
-                    step = 1;
-                    break;
-                case 1:
-                    ACLMessage reply = myAgent.receive(mt);
-                    if (reply != null) {
-                        if (reply.getPerformative() == ACLMessage.PROPOSE) {
-                            // String[] listOfFoundProducts = reply.getContent().split(";");
-                            supplier = reply.getSender();
+                        myAgent.send(cfp);
+                        mt = MessageTemplate.and(MessageTemplate.MatchConversationId("supply-of-products"),
+                                MessageTemplate.MatchInReplyTo(cfp.getReplyWith()));
+                        step = 1;
+                        break;
+                    case 2:
+                        ACLMessage reply = myAgent.receive(mt);
+                        if (reply != null) {
+                            if (reply.getPerformative() == ACLMessage.PROPOSE) {
+                                // String[] listOfFoundProducts = reply.getContent().split(";");
+                                supplier = reply.getSender();
+                            }
+                            step = 2;
+                        } else {
+                            block();
                         }
-                        step = 2;
-                    }
-                    else {
-                        block();
-                    }
-                    break;
-                case 2:
-                    ACLMessage order = new ACLMessage(ACLMessage.ACCEPT_PROPOSAL);
-                    order.addReceiver(supplier);
-                    order.setContent("");
-                    order.setConversationId("supply-of-products");
-                    order.setReplyWith("order" + System.currentTimeMillis());
-                    myAgent.send(order);
+                        break;
+                    case 3:
+                        ACLMessage order = new ACLMessage(ACLMessage.ACCEPT_PROPOSAL);
+                        order.addReceiver(supplier);
+                        order.setContent("");
+                        order.setConversationId("supply-of-products");
+                        order.setReplyWith("order" + System.currentTimeMillis());
+                        myAgent.send(order);
 
-                    mt = MessageTemplate.and(
-                            MessageTemplate.MatchConversationId("supply-of-products"),
-                            MessageTemplate.MatchInReplyTo(order.getReplyWith()));
-                    step = 3;
-                    break;
-                case 3:
-                    reply = myAgent.receive(mt);
-                    if (reply != null) {
-                        if (reply.getPerformative() == ACLMessage.INFORM) {
-                            System.out.println("Товары успешно приобретены через агента снабжения " + reply.getSender().getName());
-                            myAgent.doDelete();
+                        mt = MessageTemplate.and(
+                                MessageTemplate.MatchConversationId("supply-of-products"),
+                                MessageTemplate.MatchInReplyTo(order.getReplyWith()));
+                        step = 3;
+                        break;
+                    case 4:
+                        reply = myAgent.receive(mt);
+                        if (reply != null) {
+                            if (reply.getPerformative() == ACLMessage.INFORM) {
+                                System.out.println("Товары успешно приобретены через агента снабжения " + reply.getSender().getName());
+                                myAgent.doDelete();
+                            } else {
+                                System.out.println("Попытка не удалась: запрошенных товаров нет.");
+                            }
+                            step = 4;
+                        } else {
+                            block();
                         }
-                        else {
-                            System.out.println("Попытка не удалась: запрошенных товаров нет.");
-                        }
-                        step = 4;
-                    }
-                    else {
-                        block();
-                    }
-                    break;
+                        break;
+                }
             }
         }
 
