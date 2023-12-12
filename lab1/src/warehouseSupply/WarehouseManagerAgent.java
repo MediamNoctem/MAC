@@ -21,7 +21,7 @@ public class WarehouseManagerAgent extends Agent {
     public String[] category;
     // {"Хлебобулочные изделия", "Бакалея", "Крупы", "Мясо", "Молочные изделия"};
     public ArrayList<Record> productDatabase;
-    ArrayList<String> listOfNecessaryProducts;
+    ArrayList<ArrayList<String>> listOfNecessaryProducts;
     private AID[] supplyAgents;
 
     protected void setup() {
@@ -56,8 +56,8 @@ public class WarehouseManagerAgent extends Agent {
 
                     if (!listOfNecessaryProducts.isEmpty()) {
                         System.out.println("Необходимо пополнить следующие товарные позиции:");
-                        for (String product : listOfNecessaryProducts) {
-                            System.out.println("    * " + product);
+                        for (ArrayList<String> product : listOfNecessaryProducts) {
+                            System.out.println("    * " + product.get(0) + " в категории " + product.get(1));
                         }
 
                         System.out.println("Поиск агентов снабжения.");
@@ -131,10 +131,11 @@ public class WarehouseManagerAgent extends Agent {
 
     // Составляем список товарных позиций по категориям, количество которых меньше n, если таких позиций не менее трех
     // в категории
-    public ArrayList<String> makeListOfNecessaryProductsLessN (ArrayList<Record> db, String[] category, int n) {
-        ArrayList<ArrayList<String>> listOfNecessaryProductsByCategory = makeListOfNecessaryProducts(db, category, n);
-        ArrayList<String> listOfNecessaryProductsLessN = new ArrayList<>();
-        for (ArrayList<String> products : listOfNecessaryProductsByCategory) {
+    public ArrayList<ArrayList<String>> makeListOfNecessaryProductsLessN (ArrayList<Record> db, String[] category, int n) {
+        ArrayList<ArrayList<ArrayList<String>>> listOfNecessaryProductsByCategory =
+                makeListOfNecessaryProducts(db, category, n);
+        ArrayList<ArrayList<String>> listOfNecessaryProductsLessN = new ArrayList<>();
+        for (ArrayList<ArrayList<String>> products : listOfNecessaryProductsByCategory) {
             if (products.size() >= 3) {
                 listOfNecessaryProductsLessN.addAll(products);
             }
@@ -143,41 +144,45 @@ public class WarehouseManagerAgent extends Agent {
     }
 
     // Составление общего списка необходимых товаров
-    public ArrayList<ArrayList<String>> makeListOfNecessaryProducts (ArrayList<Record> db, String[] category, int n) {
-        ArrayList<ArrayList<String>> listOfNecessaryProductsByCategory = new ArrayList<>();
+    public ArrayList<ArrayList<ArrayList<String>>> makeListOfNecessaryProducts (ArrayList<Record> db, String[] category, int n) {
+        ArrayList<ArrayList<ArrayList<String>>> listOfNecessaryProductsByCategory = new ArrayList<>();
         for (String c : category) {
-            ArrayList<String> listOfNecessaryProducts = findProductsInCategoryLessN(db, c, n);
+            ArrayList<ArrayList<String>> listOfNecessaryProducts = findProductsInCategoryLessN(db, c, n);
             listOfNecessaryProductsByCategory.add(listOfNecessaryProducts);
         }
         return listOfNecessaryProductsByCategory;
     }
 
     // Поиск необходимых товаров в одной категории, количество которых меньше n
-    public ArrayList<String> findProductsInCategoryLessN(ArrayList<Record> db, String category, int n) {
+    public ArrayList<ArrayList<String>> findProductsInCategoryLessN(ArrayList<Record> db, String category, int n) {
         Record record;
-        ArrayList<String> listOfNecessaryProductsInCategory = new ArrayList<>();
+        ArrayList<ArrayList<String>> listOfNecessaryProductsInCategory = new ArrayList<>();
         for (Record value : db) {
             record = value;
             if (record.category.compareTo(category) == 0) {
                 if (record.count <= n) {
-                    listOfNecessaryProductsInCategory.add(record.productName);
+                    ArrayList<String> product = new ArrayList<>();
+                    product.add(record.productName);
+                    product.add(record.category);
+                    listOfNecessaryProductsInCategory.add(product);
                 }
             }
         }
         return listOfNecessaryProductsInCategory;
     }
 
-    public String arrayListToString (ArrayList<String> list) {
+    public String arrayListToString (ArrayList<ArrayList<String>> list) {
         String string = "";
-        for (String s : list) {
-            string += s + ";";
+        for (int i = 0; i < list.size(); i++) {
+            for (int j = 0; j < list.get(i).size(); j++) {
+                string += list.get(i).get(j) + ";";
+            }
         }
         return string;
     }
 
     private class RequestPerformer extends Behaviour {
         private AID supplier;
-        private int repliesCnt = 0;
         private MessageTemplate mt;
         private int step = 0;
 
@@ -202,7 +207,6 @@ public class WarehouseManagerAgent extends Agent {
                     ACLMessage reply = myAgent.receive(mt);
                     if (reply != null) {
                         if (reply.getPerformative() == ACLMessage.PROPOSE) {
-                            // String[] listOfFoundProducts = reply.getContent().split(";");
                             supplier = reply.getSender();
                         }
                         step = 2;

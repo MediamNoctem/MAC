@@ -15,9 +15,9 @@ import java.util.HashSet;
 // Агент-поставщик
 public class SupplierAgent extends Agent {
     private ArrayList<ArrayList<String>> catalogue;
-    private String[] category;
+    public String[] category;
     protected void setup() {
-        System.out.println("Агент-поставщик " + getAID().getName() + " готов.");
+        System.out.println("Агент-поставщик " + getAID().getName() + " готов.\n");
 
         catalogue = new ArrayList<>();
         HashSet<String> categoryHashSet = new HashSet<>();
