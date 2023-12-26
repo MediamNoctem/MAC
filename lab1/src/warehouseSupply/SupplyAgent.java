@@ -18,6 +18,7 @@ import java.util.Random;
 public class SupplyAgent extends Agent {
     String[] clientRequests;
     boolean hasPurchaseFromSupplierCompleted = false;
+    boolean hasBehaviorPerformed = false;
     String listOfPurchasedProducts = "";
     protected void setup() {
         System.out.println("\n------------------------------------------------------------\n");
@@ -58,7 +59,11 @@ public class SupplyAgent extends Agent {
                 clientRequests = msg.getContent().split(";");
                 ACLMessage reply = msg.createReply();
 
-                myAgent.addBehaviour(new RequestPerformer());
+                addBehaviour(new RequestPerformer());
+
+                if (!hasBehaviorPerformed) {
+                    block();
+                }
 
                 if (!hasPurchaseFromSupplierCompleted) {
                     reply.setPerformative(ACLMessage.REFUSE);
@@ -164,7 +169,6 @@ public class SupplyAgent extends Agent {
                                 hasPurchaseFromSupplierCompleted = true;
 
                                 listOfPurchasedProducts += clientRequests[i * 2] + ";" + clientRequests[i * 2 + 1] + ";";
-//                                myAgent.doDelete();
                             } else {
                                 System.out.println("Попытка не удалась: запрошенных товаров нет.");
                             }
@@ -175,6 +179,7 @@ public class SupplyAgent extends Agent {
                         break;
                 }
             }
+            hasBehaviorPerformed = true;
         }
 
         public boolean done() {
