@@ -11,9 +11,14 @@ import jade.domain.FIPAException;
 import jade.lang.acl.ACLMessage;
 import jade.lang.acl.MessageTemplate;
 
+import java.util.ArrayList;
+import java.util.Random;
+
 // Агент по снабжению
 public class SupplyAgent extends Agent {
     String[] clientRequests;
+    boolean hasPurchaseFromSupplierCompleted = false;
+    String listOfPurchasedProducts = "";
     protected void setup() {
         System.out.println("Агент снабжения склада " + getAID().getName() + " готов.\n");
 
@@ -53,14 +58,14 @@ public class SupplyAgent extends Agent {
 
                 myAgent.addBehaviour(new RequestPerformer());
 
-                if (index == -1) {
+                if (!hasPurchaseFromSupplierCompleted) {
                     reply.setPerformative(ACLMessage.REFUSE);
                     reply.setContent("not-available");
-                    System.out.println("Требуемого товара нет в наличии у агента-поставщика.");
+                    System.out.println("Требуемых товаров нет в наличии ни у одного из агентов-поставщиков.");
                 }
                 else {
                     reply.setPerformative(ACLMessage.PROPOSE);
-                    reply.setContent(msg.getContent());
+                    reply.setContent(listOfPurchasedProducts);
                 }
                 myAgent.send(reply);
             } else {
@@ -72,6 +77,8 @@ public class SupplyAgent extends Agent {
     private class RequestPerformer extends Behaviour {
         private AID supplier;
         private AID[] supplierAgents;
+        private final ArrayList<AID> supplierAgentsPropose = new ArrayList<>();
+        private int repliesCnt = 0;
         private MessageTemplate mt;
         private int step = 0;
 
@@ -87,7 +94,7 @@ public class SupplyAgent extends Agent {
                             DFAgentDescription[] result = DFService.search(myAgent, template);
                             System.out.println("Найдены следующие агенты-поставщики:");
                             supplierAgents = new AID[result.length];
-                            for (int j = 0; j < result.length; ++j) {
+                            for (int j = 0; j < result.length; j++) {
                                 supplierAgents[j] = result[j].getName();
                                 System.out.println("    * " + supplierAgents[j].getName());
                             }
@@ -98,26 +105,31 @@ public class SupplyAgent extends Agent {
                         break;
                     case 1:
                         ACLMessage cfp = new ACLMessage(ACLMessage.CFP);
-                        for (int j = 0; j < supplierAgents.length; ++j) {
+                        for (int j = 0; j < supplierAgents.length; j++) {
                             cfp.addReceiver(supplierAgents[j]);
                         }
-                        cfp.setContent("");
-                        cfp.setConversationId("supply-of-products");
+                        cfp.setContent(clientRequests[i * 2] + ";" + clientRequests[i * 2 + 1]);
+                        cfp.setConversationId("supply-" + clientRequests[i * 2 + 1] + "-" + clientRequests[i * 2]);
                         cfp.setReplyWith("cfp" + System.currentTimeMillis());
 
                         myAgent.send(cfp);
-                        mt = MessageTemplate.and(MessageTemplate.MatchConversationId("supply-of-products"),
+                        mt = MessageTemplate.and(MessageTemplate.MatchConversationId("supply-" +
+                                        clientRequests[i * 2 + 1] + "-" + clientRequests[i * 2]),
                                 MessageTemplate.MatchInReplyTo(cfp.getReplyWith()));
-                        step = 1;
+                        step = 2;
                         break;
                     case 2:
                         ACLMessage reply = myAgent.receive(mt);
                         if (reply != null) {
                             if (reply.getPerformative() == ACLMessage.PROPOSE) {
-                                // String[] listOfFoundProducts = reply.getContent().split(";");
-                                supplier = reply.getSender();
+                                supplierAgentsPropose.add(reply.getSender());
                             }
-                            step = 2;
+                            repliesCnt++;
+                            if (repliesCnt >= supplierAgents.length) {
+                                Random random = new Random();
+                                supplier = supplierAgentsPropose.get(random.nextInt(supplierAgentsPropose.size()));
+                                step = 3;
+                            }
                         } else {
                             block();
                         }
@@ -125,26 +137,31 @@ public class SupplyAgent extends Agent {
                     case 3:
                         ACLMessage order = new ACLMessage(ACLMessage.ACCEPT_PROPOSAL);
                         order.addReceiver(supplier);
-                        order.setContent("");
-                        order.setConversationId("supply-of-products");
+                        order.setContent(clientRequests[i * 2] + ";" + clientRequests[i * 2 + 1]);
+                        order.setConversationId("supply-" + clientRequests[i * 2 + 1] + "-" + clientRequests[i * 2]);
                         order.setReplyWith("order" + System.currentTimeMillis());
                         myAgent.send(order);
 
                         mt = MessageTemplate.and(
-                                MessageTemplate.MatchConversationId("supply-of-products"),
-                                MessageTemplate.MatchInReplyTo(order.getReplyWith()));
-                        step = 3;
+                                MessageTemplate.MatchConversationId("supply-" + clientRequests[i * 2 + 1] + "-" +
+                                        clientRequests[i * 2]), MessageTemplate.MatchInReplyTo(order.getReplyWith()));
+                        step = 4;
                         break;
                     case 4:
                         reply = myAgent.receive(mt);
                         if (reply != null) {
                             if (reply.getPerformative() == ACLMessage.INFORM) {
-                                System.out.println("Товары успешно приобретены через агента снабжения " + reply.getSender().getName());
-                                myAgent.doDelete();
+                                System.out.println("Товары успешно приобретены через агента снабжения " +
+                                        reply.getSender().getName());
+
+                                hasPurchaseFromSupplierCompleted = true;
+
+                                listOfPurchasedProducts += clientRequests[i * 2] + ";" + clientRequests[i * 2 + 1] + ";";
+//                                myAgent.doDelete();
                             } else {
                                 System.out.println("Попытка не удалась: запрошенных товаров нет.");
                             }
-                            step = 4;
+                            step = 5;
                         } else {
                             block();
                         }
@@ -154,10 +171,36 @@ public class SupplyAgent extends Agent {
         }
 
         public boolean done() {
-            if (step == 2 && supplier == null) {
+            if (step == 3 && supplier == null) {
                 System.out.println("Ошибка: запрошенных товаров нет.");
             }
-            return ((step == 2 && supplier == null) || step == 4);
+            return ((step == 3 && supplier == null) || step == 5);
+        }
+    }
+
+    private class PurchaseOrdersServer extends CyclicBehaviour {
+        public void action() {
+            MessageTemplate mt = MessageTemplate.MatchPerformative(ACLMessage.ACCEPT_PROPOSAL);
+            ACLMessage msg = myAgent.receive(mt);
+            if (msg != null) {
+//                clientRequests = msg.getContent().split(";");
+                ACLMessage reply = msg.createReply();
+                if (msg.getContent().compareTo(listOfPurchasedProducts) == 0) {
+                    reply.setPerformative(ACLMessage.INFORM);
+                    System.out.println("Товары " + msg.getContent() + " были приобретены через агента по снабжению " +
+                            getAID().getName() + " для агента-менеджера " + msg.getSender().getName());
+                }
+                else {
+                    reply.setPerformative(ACLMessage.FAILURE);
+                    reply.setContent("not-available");
+                    System.out.println("Агент по снабжению " + msg.getSender().getName() +
+                            " не смог приобрести необходимые товары");
+                }
+                myAgent.send(reply);
+            }
+            else {
+                block();
+            }
         }
     }
 }

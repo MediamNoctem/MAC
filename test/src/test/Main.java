@@ -5,28 +5,18 @@ import java.util.HashSet;
 
 public class Main {
     public static void main(String[] args) {
-//        ArrayList<Record> catalogue = new ArrayList<Record>();
-//        catalogue.add(new Record("Испания", "A", 900, 4));
-//        catalogue.add(new Record("Испания", "B",950, 5));
-//
-//        String str = "Испания;A;1000;3";
-//        String[] arrayStr = str.split(";");
-//
-//        Record r;
-//
-//        for (int i = 0; i < catalogue.size(); i++) {
-//            r = catalogue.get(i);
-//
-//        }
-        HashSet<String> hs = new HashSet<>();
-        hs.add("aaa");
-        hs.add("bbb");
-        hs.add("ccc");
-        hs.add("aaa");
-        hs.add("bbbb");
-        String[] hss = hs.toArray(new String[0]);
-        for (int i = 0; i < hss.length; i++) {
-            System.out.println(hss[i]);
-        }
+        ArrayList<String> a1 = new ArrayList<>();
+        ArrayList<String> a2 = new ArrayList<>();
+        ArrayList<String> a3 = new ArrayList<>();
+        ArrayList<ArrayList<String>> a = new ArrayList<>();
+        a1.add("milk1");
+        a1.add("m1");
+        a2.add("milk");
+        a2.add("m2");
+        a3.add("milk1");
+        a3.add("m1");
+        a.add(a1);
+        a.add(a2);
+        System.out.println(a.indexOf(a3));
     }
 }
