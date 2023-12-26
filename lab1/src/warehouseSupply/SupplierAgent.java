@@ -17,13 +17,15 @@ public class SupplierAgent extends Agent {
     private ArrayList<ArrayList<String>> catalogue;
     public String[] category;
     protected void setup() {
+        System.out.println("\n------------------------------------------------------------\n");
         System.out.println("Агент-поставщик " + getAID().getName() + " готов.\n");
+        System.out.println("------------------------------------------------------------\n");
 
         catalogue = new ArrayList<>();
         HashSet<String> categoryHashSet = new HashSet<>();
         Object[] args = getArguments();
 
-        System.out.println("-----------------База товаров поставщика-----------------");
+        System.out.println("-----------------База товаров поставщика " + getAID().getLocalName() + "-----------------");
         for (int i = 0; i < args.length / 2; i++) {
             if (args.length > 0) {
                 ArrayList<String> record = new ArrayList<>();
@@ -35,7 +37,7 @@ public class SupplierAgent extends Agent {
                         + record.get(1));
             }
         }
-        System.out.println("---------------------------------------------------------\n");
+        System.out.println("------------------------------------------------------------\n");
 
         category = categoryHashSet.toArray(new String[0]);
 
@@ -84,7 +86,7 @@ public class SupplierAgent extends Agent {
                 if (index == -1) {
                     reply.setPerformative(ACLMessage.REFUSE);
                     reply.setContent("not-available");
-                    System.out.println("Требуемого товара нет в наличии у агента-поставщика.");
+                    System.out.println("Требуемого товара " + msg.getContent() + " нет в наличии у агента-поставщика " + getAID().getName());
                 }
                 else {
                     reply.setPerformative(ACLMessage.PROPOSE);
@@ -113,12 +115,12 @@ public class SupplierAgent extends Agent {
 
                 if (index != -1) {
                     reply.setPerformative(ACLMessage.INFORM);
-                    System.out.println("Товар " + msg.getContent() + " был продан агенту " + msg.getSender().getName());
+                    System.out.println("Товар " + msg.getContent() + " был продан агенту по снабжению " + msg.getSender().getName());
                 }
                 else {
                     reply.setPerformative(ACLMessage.FAILURE);
                     reply.setContent("not-available");
-                    System.out.println("Требуемого товара нет у агента-поставщика.");
+                    System.out.println("Требуемого товара нет у агента-поставщика " + getAID().getName());
                 }
                 myAgent.send(reply);
             }

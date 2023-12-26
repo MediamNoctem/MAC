@@ -1,6 +1,5 @@
 package warehouseSupply;
 
-import com.sun.jdi.Value;
 import jade.core.AID;
 import jade.core.Agent;
 import jade.core.behaviours.Behaviour;
@@ -25,14 +24,17 @@ public class WarehouseManagerAgent extends Agent {
     private AID[] supplyAgents;
 
     protected void setup() {
+        System.out.println("\n------------------------------------------------------------\n");
         System.out.println("Агент-менеджер склада " + getAID().getName() + " готов.\n");
+        System.out.println("------------------------------------------------------------\n");
 
+        productDatabase = new ArrayList<>();
         Record record;
         HashSet<String> categoryHashSet = new HashSet<>();
         Object[] args = getArguments();
 
         if (args != null && args.length > 0) {
-            System.out.println("-----------------База товаров менеджера------------------");
+            System.out.println("-----------------База товаров менеджера " + getAID().getLocalName() + "------------------");
             for (int i = 0; i < args.length / 3; i++) {
                 record = new Record((String) args[3 * i], (String) args[3 * i + 1],
                         Integer.parseInt((String) args[3 * i + 2]));
@@ -40,34 +42,34 @@ public class WarehouseManagerAgent extends Agent {
                 categoryHashSet.add((String) args[3 * i + 1]);
                 System.out.println("Запись " + i + ":\n" + record.String());
             }
-            System.out.println("---------------------------------------------------------\n");
+            System.out.println("------------------------------------------------------------\n");
 
             category = categoryHashSet.toArray(new String[0]);
 
-            addBehaviour(new TickerBehaviour(this, 20000) {
+            addBehaviour(new TickerBehaviour(this, 10000) {
                 @Override
                 protected void onTick() {
-                    System.out.println("Осуществляется случайный расход товара.");
+                    System.out.println("\nОсуществляется случайный расход товара для менеджера " + getAID().getLocalName());
                     randomProductConsumption(productDatabase, category);
 
-                    System.out.println("Проверяем, нужно ли пополнить товарные позиции.");
+                    System.out.println("\nПроверяем, нужно ли пополнить товарные позиции для менеджера " + getAID().getLocalName());
                     listOfNecessaryProducts = makeListOfNecessaryProductsLessN(productDatabase,
                             category, 10);
 
                     if (!listOfNecessaryProducts.isEmpty()) {
-                        System.out.println("Необходимо пополнить следующие товарные позиции:");
+                        System.out.println("Необходимо пополнить следующие товарные позиции для менеджера " + getAID().getLocalName() + ":");
                         for (ArrayList<String> product : listOfNecessaryProducts) {
                             System.out.println("    * " + product.get(0) + " в категории " + product.get(1));
                         }
 
-                        System.out.println("Поиск агентов снабжения.");
+                        System.out.println("Поиск агентов снабжения для менеджера " + getAID().getLocalName());
                         DFAgentDescription template = new DFAgentDescription();
                         ServiceDescription sd = new ServiceDescription();
                         sd.setType("supply-of-products");
                         template.addServices(sd);
                         try {
                             DFAgentDescription[] result = DFService.search(myAgent, template);
-                            System.out.println("Найдены следующие агенты снабжения:");
+                            System.out.println("Найдены следующие агенты снабжения для менеджера " + getAID().getLocalName() + ":");
                             supplyAgents = new AID[result.length];
                             for (int i = 0; i < result.length; ++i) {
                                 supplyAgents[i] = result[i].getName();
@@ -79,19 +81,19 @@ public class WarehouseManagerAgent extends Agent {
 
                         myAgent.addBehaviour(new RequestPerformer());
                     } else {
-                        System.out.println("На данный момент товарные позиции пополнить не нужно.");
+                        System.out.println("На данный момент товарные позиции пополнить не нужно для менеджера " + getAID().getLocalName());
                     }
                 }
             });
         }
         else {
-            System.out.println("Не указаны товарные позиции.");
+            System.out.println("Не указаны товарные позиции для менеджера " + getAID().getLocalName());
             doDelete();
         }
     }
 
     protected void takeDown() {
-        System.out.println("Агент-менеджер " + getAID().getName() + " завершил свою работу.");
+        System.out.println("\nАгент-менеджер " + getAID().getName() + " завершил свою работу.");
     }
 
     // Случайный расход товара
@@ -100,18 +102,18 @@ public class WarehouseManagerAgent extends Agent {
         int randomCategory = random.nextInt(category.length);
         int randomProduct = random.nextInt(numberProductsInCategory(db, category[randomCategory]));
         int numberProductInDB = findNumberProductByNumberInCategory(db, category[randomCategory], randomProduct);
-        int randomProductConsumption = random.nextInt(numberProductInDB);
+        int randomProductConsumption = random.nextInt(db.get(numberProductInDB).count);
         db.get(numberProductInDB).count -= randomProductConsumption;
     }
 
     // Поиск количества товарной позиции по номеру в категории
     public int findNumberProductByNumberInCategory (ArrayList<Record> db, String category, int numberInCategory) {
-        int counter = 0;
+        int counter = -1;
         for (Record record : db) {
             if (record.category.compareTo(category) == 0) {
                 counter++;
                 if (counter == numberInCategory) {
-                    return record.count;
+                    return db.indexOf(record);
                 }
             }
         }
@@ -183,6 +185,7 @@ public class WarehouseManagerAgent extends Agent {
 
     private class RequestPerformer extends Behaviour {
         private AID supplier;
+        String listOfPurchasedProducts;
         private MessageTemplate mt;
         private int step = 0;
 
@@ -207,6 +210,7 @@ public class WarehouseManagerAgent extends Agent {
                     ACLMessage reply = myAgent.receive(mt);
                     if (reply != null) {
                         if (reply.getPerformative() == ACLMessage.PROPOSE) {
+                            listOfPurchasedProducts = reply.getContent();
                             supplier = reply.getSender();
                         }
                         step = 2;
@@ -218,7 +222,7 @@ public class WarehouseManagerAgent extends Agent {
                 case 2:
                     ACLMessage order = new ACLMessage(ACLMessage.ACCEPT_PROPOSAL);
                     order.addReceiver(supplier);
-                    order.setContent(arrayListToString(listOfNecessaryProducts));
+                    order.setContent(listOfPurchasedProducts);
                     order.setConversationId("supply-of-products");
                     order.setReplyWith("order" + System.currentTimeMillis());
                     myAgent.send(order);
@@ -232,6 +236,17 @@ public class WarehouseManagerAgent extends Agent {
                     reply = myAgent.receive(mt);
                     if (reply != null) {
                         if (reply.getPerformative() == ACLMessage.INFORM) {
+                            String[] listProducts = listOfPurchasedProducts.split(";");
+                            for (int i = 0; i < listProducts.length / 2; i++) {
+                                for (int j = 0; j < productDatabase.size(); j++) {
+                                    if (listProducts[i * 2].compareTo(productDatabase.get(j).productName) == 0) {
+                                        if (listProducts[i * 2 + 1].compareTo(productDatabase.get(j).category) == 0) {
+                                            productDatabase.get(j).count = 100;
+                                        }
+                                    }
+
+                                }
+                            }
                             System.out.println("Товары успешно приобретены через агента снабжения " + reply.getSender().getName());
                             myAgent.doDelete();
                         }

@@ -1,20 +1,13 @@
 package test;
 
 public class Record {
-    public String country;
-    public String apartmentClass;
-    public Integer cost;
-    public Integer durationRental;
+    public String productName;
+    public String category;
+    public int count;
 
-    public Record(String arg, String arg1, Integer arg2, Integer arg3) {
-        this.country = arg;
-        this.apartmentClass = arg1;
-        this.cost = arg2;
-        this.durationRental = arg3;
-    }
-
-    public String String() {
-        return "страна: " + this.country + "; класс апартаментов: " + this.apartmentClass + "; стоимость: " +
-                this.cost + "; длительность съема: " + this.durationRental + ";";
+    public Record(String arg, String arg1, Integer arg2) {
+        this.productName = arg;
+        this.category = arg1;
+        this.count = arg2;
     }
 }

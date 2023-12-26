@@ -20,7 +20,9 @@ public class SupplyAgent extends Agent {
     boolean hasPurchaseFromSupplierCompleted = false;
     String listOfPurchasedProducts = "";
     protected void setup() {
+        System.out.println("\n------------------------------------------------------------\n");
         System.out.println("Агент снабжения склада " + getAID().getName() + " готов.\n");
+        System.out.println("------------------------------------------------------------\n");
 
         DFAgentDescription dfd = new DFAgentDescription();
         dfd.setName(getAID());
@@ -92,16 +94,21 @@ public class SupplyAgent extends Agent {
                         template.addServices(sdt);
                         try {
                             DFAgentDescription[] result = DFService.search(myAgent, template);
-                            System.out.println("Найдены следующие агенты-поставщики:");
-                            supplierAgents = new AID[result.length];
-                            for (int j = 0; j < result.length; j++) {
-                                supplierAgents[j] = result[j].getName();
-                                System.out.println("    * " + supplierAgents[j].getName());
+                            if (result.length > 0) {
+                                System.out.println("Найдены следующие агенты-поставщики:");
+                                supplierAgents = new AID[result.length];
+                                for (int j = 0; j < result.length; j++) {
+                                    supplierAgents[j] = result[j].getName();
+                                    System.out.println("    * " + supplierAgents[j].getName());
+                                }
+                                step = 1;
+                            }
+                            else {
+                                System.out.println("Агенты-поставщики для товара " + clientRequests[2 * i] + ";" + clientRequests[2 * i + 1] + " не найдены.");
                             }
                         } catch (FIPAException fe) {
                             fe.printStackTrace();
                         }
-                        step = 1;
                         break;
                     case 1:
                         ACLMessage cfp = new ACLMessage(ACLMessage.CFP);
@@ -151,8 +158,8 @@ public class SupplyAgent extends Agent {
                         reply = myAgent.receive(mt);
                         if (reply != null) {
                             if (reply.getPerformative() == ACLMessage.INFORM) {
-                                System.out.println("Товары успешно приобретены через агента снабжения " +
-                                        reply.getSender().getName());
+                                System.out.println("Товар " + clientRequests[i * 2] + ";" + clientRequests[i * 2 + 1] + " успешно приобретен через агента снабжения " +
+                                        reply.getSender().getName() + " для агента менеджера " + reply.getSender().getName());
 
                                 hasPurchaseFromSupplierCompleted = true;
 
