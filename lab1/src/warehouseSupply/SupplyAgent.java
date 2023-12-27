@@ -4,6 +4,8 @@ import jade.core.AID;
 import jade.core.Agent;
 import jade.core.behaviours.Behaviour;
 import jade.core.behaviours.CyclicBehaviour;
+import jade.core.behaviours.OneShotBehaviour;
+import jade.core.behaviours.SequentialBehaviour;
 import jade.domain.DFService;
 import jade.domain.FIPAAgentManagement.DFAgentDescription;
 import jade.domain.FIPAAgentManagement.ServiceDescription;
@@ -17,8 +19,7 @@ import java.util.Random;
 // Агент по снабжению
 public class SupplyAgent extends Agent {
     String[] clientRequests;
-    boolean hasPurchaseFromSupplierCompleted = false;
-    boolean hasBehaviorPerformed = false;
+    boolean hasPurchaseFromSupplierCompleted;
     String listOfPurchasedProducts = "";
     protected void setup() {
         System.out.println("\n------------------------------------------------------------\n");
@@ -59,11 +60,9 @@ public class SupplyAgent extends Agent {
                 clientRequests = msg.getContent().split(";");
                 ACLMessage reply = msg.createReply();
 
-                addBehaviour(new RequestPerformer());
+                hasPurchaseFromSupplierCompleted = false;
 
-                if (!hasBehaviorPerformed) {
-                    block();
-                }
+                myAgent.addBehaviour(new RequestPerformer());
 
                 if (!hasPurchaseFromSupplierCompleted) {
                     reply.setPerformative(ACLMessage.REFUSE);
@@ -179,7 +178,6 @@ public class SupplyAgent extends Agent {
                         break;
                 }
             }
-            hasBehaviorPerformed = true;
         }
 
         public boolean done() {
