@@ -69,22 +69,17 @@ public class WarehouseManagerAgent extends Agent {
                         template.addServices(sd);
                         try {
                             DFAgentDescription[] result = DFService.search(myAgent, template);
-                            if (result.length > 0) {
-                                System.out.println("Найдены следующие агенты снабжения для менеджера " + getAID().getLocalName() + ":");
-                                supplyAgents = new AID[result.length];
-                                for (int i = 0; i < result.length; ++i) {
-                                    supplyAgents[i] = result[i].getName();
-                                    System.out.println("    * " + supplyAgents[i].getName());
-                                }
-
-                                myAgent.addBehaviour(new RequestPerformer());
-                            }
-                            else {
-                                System.out.println("Агенты по снабжению для менеджера " + getAID().getLocalName() + " не найдены");
+                            System.out.println("Найдены следующие агенты снабжения для менеджера " + getAID().getLocalName() + ":");
+                            supplyAgents = new AID[result.length];
+                            for (int i = 0; i < result.length; ++i) {
+                                supplyAgents[i] = result[i].getName();
+                                System.out.println("    * " + supplyAgents[i].getName());
                             }
                         } catch (FIPAException fe) {
                             fe.printStackTrace();
                         }
+
+                        myAgent.addBehaviour(new RequestPerformer());
                     } else {
                         System.out.println("На данный момент товарные позиции пополнить не нужно для менеджера " + getAID().getLocalName());
                     }

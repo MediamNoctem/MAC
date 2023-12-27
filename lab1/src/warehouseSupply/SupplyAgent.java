@@ -4,8 +4,6 @@ import jade.core.AID;
 import jade.core.Agent;
 import jade.core.behaviours.Behaviour;
 import jade.core.behaviours.CyclicBehaviour;
-import jade.core.behaviours.OneShotBehaviour;
-import jade.core.behaviours.SequentialBehaviour;
 import jade.domain.DFService;
 import jade.domain.FIPAAgentManagement.DFAgentDescription;
 import jade.domain.FIPAAgentManagement.ServiceDescription;
@@ -20,6 +18,7 @@ import java.util.Random;
 public class SupplyAgent extends Agent {
     String[] clientRequests;
     boolean hasPurchaseFromSupplierCompleted;
+    boolean hasBehaviorPerformed = false;
     String listOfPurchasedProducts = "";
     protected void setup() {
         System.out.println("\n------------------------------------------------------------\n");
@@ -64,16 +63,19 @@ public class SupplyAgent extends Agent {
 
                 myAgent.addBehaviour(new RequestPerformer());
 
-                if (!hasPurchaseFromSupplierCompleted) {
-                    reply.setPerformative(ACLMessage.REFUSE);
-                    reply.setContent("not-available");
-                    System.out.println("Требуемых товаров нет в наличии ни у одного из агентов-поставщиков.");
+                if (hasBehaviorPerformed) {
+                    if (!hasPurchaseFromSupplierCompleted) {
+                        reply.setPerformative(ACLMessage.REFUSE);
+                        reply.setContent("not-available");
+                        System.out.println("Требуемых товаров нет в наличии ни у одного из агентов-поставщиков.");
+                    } else {
+                        reply.setPerformative(ACLMessage.PROPOSE);
+                        reply.setContent(listOfPurchasedProducts);
+                    }
+                    myAgent.send(reply);
+
+                    hasBehaviorPerformed = false;
                 }
-                else {
-                    reply.setPerformative(ACLMessage.PROPOSE);
-                    reply.setContent(listOfPurchasedProducts);
-                }
-                myAgent.send(reply);
             } else {
                 block();
             }
@@ -166,6 +168,7 @@ public class SupplyAgent extends Agent {
                                         reply.getSender().getName() + " для агента менеджера " + reply.getSender().getName());
 
                                 hasPurchaseFromSupplierCompleted = true;
+                                hasBehaviorPerformed = true;
 
                                 listOfPurchasedProducts += clientRequests[i * 2] + ";" + clientRequests[i * 2 + 1] + ";";
                             } else {
